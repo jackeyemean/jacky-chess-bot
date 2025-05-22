@@ -4,7 +4,7 @@ import pandas as pd
 
 # Config
 LABELLED_PATH = "../data/positions_labelled.csv"
-STOCKFISH_PATH = "../stockfish/stockfish-windows-x86-64-avx2.exe"
+STOCKFISH_PATH = "C:\Users\jacky\repos\stockfish\stockfish-windows-x86-64-avx2.exe"
 
 # Load previously labelled positions
 df = pd.read_csv(LABELLED_PATH)
