@@ -1,0 +1,5 @@
+fen,phase,move_number,turn,material_diff,your_move,time_taken,eval_before,eval_after,best_move_deviation,best_move
+rn2kb1r/pbpp1p1p/1p2p3/6qp/3PP1BN/P1N5/1PP2PPP/R2QK2R w KQkq - 4 10,middlegame,19,white,0,g4f3,17.44,-322,-386,64,g4h5
+rn2kb1r/pbpp1p1p/1p2p3/6qp/3PP1B1/P1N2N2/1PP2PPP/R2QK2R b KQkq - 1 8,middlegame,16,black,0,g5g4,11.4,-439,-471,32,g5g4
+rn1qkb1r/pbpp1p1p/1p2p2p/8/3PP3/P1N5/1PP2PPP/R2QKBNR w KQkq - 0 6,middlegame,11,white,0,d1h5,10.88,147,92,55,d1d2
+rnbqkb1r/ppp1pppp/5n2/3p4/3P4/4PN2/PPP2PPP/RNBQKB1R b KQkq - 0 3,opening,6,black,0,c8g4,3.42,16,32,16,e7e6
