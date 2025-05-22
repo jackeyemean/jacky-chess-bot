@@ -52,7 +52,7 @@ def get_material_diff(board: chess.Board) -> int:
 
 def extract_positions(pgn_path: str, max_positions: int = 300) -> list[dict]:
     """
-    For each game in the PGN file, randomly extract 3 positions after move 5.
+    For each game in the PGN file, randomly extract 1 position after move 5.
     
     Every position will have a corresponding FEN, game phase, move number, turn, and material diff.
 
@@ -72,11 +72,16 @@ def extract_positions(pgn_path: str, max_positions: int = 300) -> list[dict]:
             if len(game_moves) < 10:
                 continue
 
-            move_indexes = random.sample(range(5, len(game_moves)), min(3, len(game_moves) - 5))
-            for idx in move_indexes:
+            # Find valid position (not stalemate, checkmate, insufficient material, etc)
+            valid_found = False
+            for attempt in range(len(game_moves) - 5):
+                idx = random.randint(5, len(game_moves) - 1)
                 board = game.board()
                 for move in game_moves[:idx]:
                     board.push(move)
+
+                if board.is_game_over():
+                    continue  # Skip terminal positions
 
                 move_number = idx + 1
                 positions.append({
@@ -86,9 +91,11 @@ def extract_positions(pgn_path: str, max_positions: int = 300) -> list[dict]:
                     "turn": "white" if board.turn == chess.WHITE else "black",
                     "material_diff": get_material_diff(board)
                 })
+                valid_found = True
+                break  # One valid position per game
 
-                if len(positions) >= max_positions:
-                    break
+            if valid_found and len(positions) >= max_positions:
+                break
 
             game_counter += 1
             if game_counter % 100 == 0:
