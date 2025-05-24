@@ -4,7 +4,6 @@ import os
 import chess
 import time
 
-# Config
 INPUT_CSV = "../data/positions_extracted.csv"
 OUTPUT_CSV = "../data/positions_labelled.csv"
 ASSETS_DIR = "../assets"
@@ -26,7 +25,6 @@ screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE + INFO_HEIGHT + TIMER
 pygame.display.set_caption("Chess Labeler")
 font = pygame.font.SysFont(None, 32)
 
-# Load labelled positions if resuming from previous session
 df = pd.read_csv(INPUT_CSV)
 labeled = []
 index = 0
@@ -36,12 +34,10 @@ if os.path.exists(OUTPUT_CSV) and os.path.getsize(OUTPUT_CSV) > 0:
     index = len(labeled)
 
 def load_piece_images() -> dict:
-    """
-    Loads and scales chess piece images.
-
-    Returns:
-        dict mapping piece codes (e.g., 'wP', 'bN') to scaled pygame.Surface objects.
-    """
+    '''
+    - loads and scales chess piece images
+    - returns a dict mapping piece codes (e.g., 'wP', 'bN') to scaled pygame.Surface objects.
+    '''
     images = {}
     for piece in "PNBRQK":
         for color in "wb":
@@ -57,7 +53,7 @@ piece_images = load_piece_images()
 
 def draw_board(board: chess.Board, from_sq: int = None, legal_moves: list = [], message: str = "", time_elapsed: float = None) -> None:
     """
-    Renders chessboard and UI elements to the screen.
+    renders chessboard and UI elements
     """
     flip = not board.turn
     screen.fill((255, 255, 255))
@@ -98,16 +94,10 @@ def draw_board(board: chess.Board, from_sq: int = None, legal_moves: list = [], 
     pygame.display.flip()
 
 def get_square_from_mouse(pos: tuple, flip: bool = False) -> int:
-    """
-    Converts mouse position to a chess square index.
-    
-    Args:
-        pos: (x, y) pixel coordinates of mouse.
-        flip: Whether the board is flipped (used to match orientation to side to move).
-
-    Returns:
-        int index of clicked chess square.
-    """
+    '''
+    - converts mouse (x, y) tuple position to chess square index
+    - also has to check if board is flipped (ie playing as black)
+    '''
     file = pos[0] // SQUARE_SIZE
     rank = 7 - ((pos[1] - TIMER_HEIGHT) // SQUARE_SIZE)
     if flip:
@@ -116,19 +106,17 @@ def get_square_from_mouse(pos: tuple, flip: bool = False) -> int:
     return chess.square(file, rank)
 
 def clicked_go_back(pos: tuple) -> bool:
-    """
-    Checks if the Go Back button was clicked.
-    
-    Args:
-        pos: (x, y) mouse coordinates.
-
-    Returns:
-        True if within Go Back button bounds, False otherwise.
-    """
+    '''
+    checks if back button was selected
+    '''
     x, y = pos
     return WINDOW_SIZE - 130 <= x <= WINDOW_SIZE - 10 and WINDOW_SIZE + TIMER_HEIGHT + 5 <= y <= WINDOW_SIZE + TIMER_HEIGHT + 35
 
-# Main loop for playing through positions and collecting user move labels
+'''
+MAIN LOOP
+- playing through positions
+- collecting user move labels
+'''
 running = True
 while running and index < len(df):
     row = df.iloc[index]
