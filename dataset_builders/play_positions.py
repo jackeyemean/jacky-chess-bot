@@ -4,9 +4,9 @@ import os
 import chess
 import time
 
-INPUT_CSV = "../data/positions_extracted.csv"
-OUTPUT_CSV = "../data/positions_labelled.csv"
-ASSETS_DIR = "../assets"
+INPUT_CSV = "data/positions_extracted.csv"
+OUTPUT_CSV = "data/positions_labelled.csv"
+ASSETS_DIR = "assets"
 SQUARE_SIZE = 80
 WINDOW_SIZE = SQUARE_SIZE * 8
 INFO_HEIGHT = 40

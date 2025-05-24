@@ -2,7 +2,7 @@ import chess
 import chess.engine
 import pandas as pd
 
-LABELLED_POSITIONS_PATH = "../data/positions_labelled.csv"
+LABELLED_POSITIONS_PATH = "data/positions_labelled.csv"
 STOCKFISH_PATH = "C:\\Users\\jacky\\repos\\stockfish\\stockfish-windows-x86-64-avx2.exe"
 
 df = pd.read_csv(LABELLED_POSITIONS_PATH)

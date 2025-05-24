@@ -1,9 +1,12 @@
+import chess
 import chess.pgn
 import random
 import csv
+import os
 
-PGN_PATH = "../data/lichess_db_standard_rated_2013-01.pgn"
-OUTPUT_CSV_PATH = "../data/positions_extracted.csv"
+
+PGN_PATH = "data/lichess_db_standard_rated_2013-01.pgn"
+OUTPUT_CSV_PATH = "data/positions_extracted.csv"
 POSITIONS_TO_EXTRACT = 300
 PIECE_VALUES = {
     chess.PAWN: 1,
@@ -66,16 +69,16 @@ def extract_positions(pgn_path: str, max_positions: int = 300) -> list[dict]:
             if len(game_moves) < 10:
                 continue
 
-            # find a valid position (not stalemate, checkmate, insufficient material)
+            # find a valid position and take one per game
             valid_found = False
-            for attempt in range(len(game_moves) - 5):
+            for _ in range(len(game_moves) - 5):
                 idx = random.randint(5, len(game_moves) - 1)
                 board = game.board()
                 for move in game_moves[:idx]:
                     board.push(move)
-                # skips positions with stalemate, checkmate, insufficient material
+
                 if board.is_game_over():
-                    continue 
+                    continue
 
                 move_number = idx + 1
                 positions.append({
@@ -87,9 +90,6 @@ def extract_positions(pgn_path: str, max_positions: int = 300) -> list[dict]:
                 })
                 valid_found = True
                 break  # one position per game
-
-            if valid_found and len(positions) >= max_positions:
-                break
 
             game_counter += 1
             if game_counter % 100 == 0:
