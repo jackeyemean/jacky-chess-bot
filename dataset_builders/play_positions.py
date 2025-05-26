@@ -125,11 +125,15 @@ while running and index < len(df):
     message = ""
     from_square = None
     legal_squares = []
+    # collect up to 3 moves
+    candidate_moves = []
     start_time = time.time()
 
     while not move_made:
         elapsed = round(time.time() - start_time, 1)
-        draw_board(board, from_sq=from_square, legal_moves=legal_squares, message=message, time_elapsed=elapsed)
+        # show how many moves so far
+        msg = f"Moves inputted: {len(candidate_moves)}/3"
+        draw_board(board, from_sq=from_square, legal_moves=legal_squares, message=msg, time_elapsed=elapsed)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -144,7 +148,9 @@ while running and index < len(df):
                         pd.DataFrame(labeled).to_csv(OUTPUT_CSV, index=False)
                         row = df.iloc[index]
                         board = chess.Board(row["fen"])
-                        message = "Went back one move"
+                        message = "Already at start of data"
+                        # reset for this position
+                        candidate_moves = []
                         from_square = None
                         legal_squares = []
                         start_time = time.time()
@@ -172,20 +178,26 @@ while running and index < len(df):
 
                     move = chess.Move(from_square, to_square)
                     if move in board.legal_moves:
-                        time_taken = round(time.time() - start_time, 2)
-                        board.push(move)
-                        labeled.append({
-                            "fen": row["fen"],
-                            "phase": row["phase"],
-                            "move_number": row["move_number"],
-                            "turn": row["turn"],
-                            "material_diff": row["material_diff"],
-                            "your_move": move.uci(),
-                            "time_taken": time_taken
-                        })
-                        pd.DataFrame(labeled).to_csv(OUTPUT_CSV, index=False)
-                        index += 1
-                        move_made = True
+                        candidate_moves.append(move.uci())
+                        # reset selection for next candidate
+                        from_square = None
+                        legal_squares = []
+                        message = ""
+                        # once we have 3, finalize this position
+                        if len(candidate_moves) == 3:
+                            total_time = round(time.time() - start_time, 2)
+                            labeled.append({
+                                "fen": row["fen"],
+                                "phase": row["phase"],
+                                "move_number": row["move_number"],
+                                "turn": row["turn"],
+                                "material_diff": row["material_diff"],
+                                "your_moves": ",".join(candidate_moves),
+                                "time_taken": total_time
+                            })
+                            pd.DataFrame(labeled).to_csv(OUTPUT_CSV, index=False)
+                            index += 1
+                            move_made = True
                     else:
                         message = "Illegal move"
                         from_square = None
