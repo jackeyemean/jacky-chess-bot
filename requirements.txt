@@ -2,3 +2,6 @@ python-chess
 pandas
 pygame
 pillow
+scikit-learn 
+joblib
+numpy

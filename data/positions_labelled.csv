@@ -1,14 +1,16 @@
-fen,phase,move_number,turn,material_diff,your_move,time_taken,eval_before_cp,eval_after_cp,mate_before_dist,mate_after_dist,best_stockfish,eval_deviation
-r2k1b1r/pbpp1Q1p/1pn1p3/7B/3PP2q/P1N5/1PP2PPP/R3K2R w KQ - 1 13,middlegame,25,white,-1,f7e8,4.61,9999,10000,1.0,0.0,f7e8,0
-r3q3/ppp1kppQ/3bpnp1/6B1/3nN3/3B4/PPPK1PP1/R7 w - - 2 15,middlegame,29,white,-2,h7g7,12.33,424,439,,,h7g7,15
-r1bqk2r/pppp1ppp/2n2n2/4p3/2B1P3/P1N2N2/1PPP1KPP/R1BQ3R b kq - 0 6,middlegame,12,black,2,e8g8,4.81,324,407,,,f6e4,83
-r1bqkbnr/pp1npppp/2p5/8/4N3/5Q2/PPPP1PPP/R1B1KBNR w KQkq - 1 5,opening,9,white,0,f1c4,27.27,11,-43,,,d2d4,54
-r4b1r/pp3kp1/1q2b3/2ppP2p/5P2/2PP3P/PP1N1K2/R1B2n2 w - - 0 23,middlegame,45,white,-16,d2f1,5.85,-887,-894,,,d2f1,7
-r3k1r1/pbppqpbp/1p2p2p/8/2P1P3/2P1Q2N/PP3PPP/RN3RK1 b q - 2 12,middlegame,24,black,0,e7h4,12.62,-179,-199,,,f7f5,20
-3q1rk1/p1p2p2/Q2pbn2/2b1p1p1/4P2p/2PP3P/P2N1PPB/R4RK1 b - - 1 17,middlegame,34,black,2,g5g4,9.88,62,44,,,g5g4,18
-rn1qk1nr/1pp2ppp/p2p4/2b1p3/2P1P3/P2P1b1P/1P3PP1/RNBQKB1R w KQkq - 0 7,middlegame,13,white,-3,d1f3,3.65,-39,-28,,,d1f3,11
-5r1k/1p2rp2/p2p2p1/2p1n3/2P1P3/2K2P1B/PP6/R2Q4 w - - 0 31,endgame,61,white,3,f3f4,15.31,586,436,,,d1d6,150
-rnbq1rk1/ppp2ppp/3b1n2/8/8/P1N2N2/1PP1PPPP/R1BQKB1R b KQ - 0 6,middlegame,12,black,1,b8c6,7.74,89,101,,,h7h6,12
-rn1qkb1r/pp2pp1p/2pp2p1/5bB1/3Pn3/5N1P/PPPNQPP1/R3KB1R b KQkq - 3 7,middlegame,14,black,-1,e4g5,11.82,-196,-197,,,e4g5,1
-8/4K3/r3p3/P1kp4/R1p3pP/8/2r5/8 w - - 0 46,endgame,91,white,-7,h4h5,19.95,-726,-755,,,a4a3,29
-r1b2rk1/ppppnpp1/1bn2q1p/4p3/1PB1P3/P1NP1N2/2P2PPP/R1BQ1RK1 w - - 4 9,middlegame,17,white,0,c1e3,2.2,19,-1,,,g1h1,20
+fen,phase,move_number,turn,material_diff,your_moves,time_taken,eval_before_cp,eval_after_cp,mate_before_dist,mate_after_dist,best_stockfish,eval_deviations
+rnbqkbnr/p1pp1ppp/1p2p3/8/3PP3/P7/1PP2PPP/RNBQKBNR b KQkq - 0 3,opening,6,black,0,"d7d5,c8b7,g8f6",16.27,78,"81,77,134",,"None,None,None",d7d5,"3,1,56"
+rn1qk2r/ppp2pp1/3bpnp1/3p4/3P4/3BP3/PPPN1PPP/R1BQK2R w KQkq - 2 8,middlegame,15,white,0,"c2c4,h2h3,b2b3",28.38,18,"0,-19,-32",,"None,None,None",e3e4,"18,37,50"
+r1bqk2r/pppp1ppp/2n2n2/4p3/2B1P3/P1N2N2/1PPP1KPP/R1BQ3R b kq - 0 6,middlegame,12,black,2,"e8g8,d7d6,e8g8",10.75,308,"361,381,376",,"None,None,None",f6e4,"53,73,68"
+r2qkb1r/pp3ppp/2p1p1b1/8/2B2N2/3P1Q2/PPP2PPP/R3K2R b KQkq - 0 12,middlegame,24,black,0,"b7b5,d8b6,d8a5",11.55,-135,"510,13,-17",,"None,None,None",d8f6,"645,148,118"
+r4b1r/pp3kp1/1q2b3/2ppP2p/5P2/2PPn2P/PP1N1K2/R1B2R2 b - - 5 22,middlegame,44,black,-11,"e3f5,d5d4,c5c4",23.01,-894,"-799,-793,-839",,"None,None,None",e3f1,"95,101,55"
+1r2k1r1/p1p2p2/3pp2p/1b4p1/2P5/Q5P1/P2R1P1P/5RK1 w - - 0 25,endgame,49,white,4,"c4b5,c4b5,c4b5",5.82,703,"702,690,694",,"None,None,None",c4b5,"1,13,9"
+5rk1/p1pq1p2/Q2pbn2/2b1p1p1/4P2p/2PP1N1P/P4PPB/R4RK1 b - - 3 18,middlegame,36,black,2,"f8b8,g5g4,g5g4",15.13,148,"242,139,132",,"None,None,None",g5g4,"94,9,16"
+3rk1nQ/1p2np2/pNp4q/2P3pB/1P6/P2P3P/5PP1/4RRK1 w - - 3 27,middlegame,53,white,7,"h8g8,h8g8,h8g8",14.12,9998,"9999,9999,9999",2.0,"1,1,1",h8g8,"1,1,1"
+rnbqk2r/pp2pp1p/3p2p1/2pP1n2/2P5/2N2N2/PP2PPPP/R2QKB1R b KQkq - 0 7,middlegame,14,black,0,"e8g8,e7e5,d8b6",21.24,115,"135,123,184",,"None,None,None",e7e5,"20,8,69"
+8/2Q2pk1/p1p3b1/1pq5/1P6/P7/5PP1/7K b - - 0 34,endgame,68,black,-3,"c5f2,c5f2,c5f2",13.29,-513,"-491,-512,-502",,"None,None,None",c5f2,"22,1,11"
+1R4k1/p4r2/2p1rppB/7p/bPpP4/2P4P/P4PP1/2R3K1 b - - 2 26,endgame,52,black,1,"g8h7,g8h7,g8h7",7.46,165,"168,191,193",,"None,None,None",g8h7,"3,26,28"
+rnbq1rk1/pp2b1pp/4p3/2ppPp2/3P4/2NB1NQ1/PPP2PPP/R3K2R b KQ - 1 10,middlegame,20,black,0,"f5f4,c5c4,c5c4",10.71,-142,"79,-127,-128",,"None,None,None",d8b6,"221,15,14"
+1r4k1/bp4p1/p3p1np/3q1r2/1PNp2Q1/P2P4/2P2PPP/R3R1K1 w - - 0 24,middlegame,47,white,-2,"g4g6,g4g6,g4g6",7.43,179,"169,176,155",,"None,None,None",g4g6,"10,3,24"
+r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3,opening,6,black,0,"a7a6,d7d6,g8f6",5.44,33,"36,55,30",,"None,None,None",a7a6,"3,22,3"
+8/1p5p/p3k1p1/2p3P1/P3rP2/1PK5/2P5/5R2 b - - 4 33,endgame,66,black,0,"b7b5,e6f5,e6f5",6.28,-15,"-6,-25,-26",,"None,None,None",e6f5,"9,10,11"
