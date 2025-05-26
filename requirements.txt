@@ -5,3 +5,4 @@ pillow
 scikit-learn 
 joblib
 numpy
+tdqm
