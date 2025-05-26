@@ -7,7 +7,7 @@ import os
 
 PGN_PATH = "data/lichess_db_standard_rated_2013-01.pgn"
 OUTPUT_CSV_PATH = "data/positions_extracted.csv"
-POSITIONS_TO_EXTRACT = 300
+POSITIONS_TO_EXTRACT = 500
 PIECE_VALUES = {
     chess.PAWN: 1,
     chess.KNIGHT: 3,
