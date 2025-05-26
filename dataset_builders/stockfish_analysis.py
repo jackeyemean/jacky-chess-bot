@@ -9,97 +9,95 @@ df = pd.read_csv(LABELLED_POSITIONS_PATH)
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 
 # accumulators for every position
-centipawns_before = []
-centipawns_after = []
-mate_distance_before = []
-mate_distance_after = []
-predicted_best_moves = []
-evaluation_deviation = []
+centipawns_before      = []
+centipawns_after       = []
+mate_distance_before   = []
+mate_distance_after    = []
+predicted_best_moves   = []
+evaluation_deviations  = []
 
 # process each row (aka position)
 for _, row in df.iterrows():
     board = chess.Board(row["fen"])
-    move = chess.Move.from_uci(row["your_move"])
+    # now contains three comma-delimited moves
+    candidate_moves = row["your_moves"].split(",")
 
-    # analysis before move
+    # analysis before move (same for all three)
     try:
         analysis_before = engine.analyse(board, chess.engine.Limit(time=0.1))
         score_before = analysis_before["score"].white()
         cp_before = score_before.score(mate_score=10_000)
         mate_before = score_before.mate()
 
-        pv = analysis_before.get("pv", [])  # pv stands for "principal variation" (aka engine's current best line of play)
+        pv = analysis_before.get("pv", [])  # pv stands for "principal variation"
         best_move_pred = pv[0].uci() if pv else None
     except:
         centipawns_before.append(None)
-        centipawns_after.append(None)
+        centipawns_after.append(",".join([ "" for _ in candidate_moves ]))
         mate_distance_before.append(None)
-        mate_distance_after.append(None)
-        predicted_best_moves.append(None)
-        evaluation_deviation.append(None)
+        mate_distance_after.append(",".join([ "" for _ in candidate_moves ]))
+        predicted_best_moves.append(best_move_pred if 'best_move_pred' in locals() else None)
+        evaluation_deviations.append(",".join([ "" for _ in candidate_moves ]))
         continue
 
-    # save to accumulators
+    # save single-before values
     centipawns_before.append(cp_before)
     mate_distance_before.append(mate_before)
     predicted_best_moves.append(best_move_pred)
 
-    # apply move
-    board.push(move)
+    after_cps = []
+    after_mates = []
+    after_devs = []
 
-    # analysis after move
-    try:
-        analysis_after = engine.analyse(board, chess.engine.Limit(time=0.1))
-        score_after = analysis_after["score"].white()
-        cp_after = score_after.score(mate_score=10_000)
-        mate_after = score_after.mate()
-    except:
-        centipawns_after.append(None)
-        mate_distance_after.append(None)
-        evaluation_deviation.append(None)
-        continue
+    for mv in candidate_moves:
+        b2 = board.copy()
+        b2.push(chess.Move.from_uci(mv))
 
-    # save to accumulators
-    centipawns_after.append(cp_after)
-    mate_distance_after.append(mate_after)
-    
-    # edge case handling
-    if board.is_game_over():
-        # game ended after this move: draw or delivered mate
-        result = board.result()  # "1-0", "0-1", or "1/2-1/2"
-        if result == "1/2-1/2":
-            # draw — you missed whatever edge you had
-            deviation = abs(cp_before)
+        try:
+            analysis_after = engine.analyse(b2, chess.engine.Limit(time=0.1))
+            score_after = analysis_after["score"].white()
+            cp_after = score_after.score(mate_score=10_000)
+            mate_after = score_after.mate()
+        except:
+            after_cps.append(None)
+            after_mates.append(None)
+            after_devs.append(None)
+            continue
+
+        after_cps.append(cp_after)
+        after_mates.append(mate_after)
+
+        # edge case handling
+        if b2.is_game_over():
+            result = b2.result()
+            if result == "1/2-1/2":
+                deviation = abs(cp_before)
+            else:
+                deviation = 0
+        elif mate_before is not None and mate_after is not None:
+            deviation = abs(mate_before - mate_after)
+        elif mate_before is not None and mate_after is None:
+            deviation = 10_000 + abs(cp_after)
+        elif mate_before is None and mate_after is not None:
+            deviation = 10_000 + abs(cp_before)
         else:
-            # you delivered the win/mate — no penalty
-            deviation = 0
+            deviation = abs(cp_after - cp_before)
 
-    elif mate_before is not None and mate_after is not None:
-        # checkmate still possible in both positions, measure change in mate distance
-        deviation = abs(mate_before - mate_after)
+        after_devs.append(deviation)
 
-    elif mate_before is not None and mate_after is None:
-        # lost a forced mate, heavy penalty
-        deviation = 10_000 + abs(cp_after)
-
-    elif mate_before is None and mate_after is not None:
-        # walked into a forced mate, heavy penalty
-        deviation = 10_000 + abs(cp_before)
-
-    else:
-        # no forced mate in either: simple centipawn swing
-        deviation = abs(cp_after - cp_before)
-    
-    evaluation_deviation.append(deviation)
+    # comma-delimit everything
+    centipawns_after.append(",".join(str(x) for x in after_cps))
+    mate_distance_after.append(",".join(str(x) for x in after_mates))
+    evaluation_deviations.append(",".join(str(x) for x in after_devs))
 
 engine.quit()
 
-df["eval_before_cp"] = centipawns_before
-df["eval_after_cp"] = centipawns_after
-df["mate_before_dist"] = mate_distance_before
-df["mate_after_dist"] = mate_distance_after
-df["best_stockfish"] = predicted_best_moves
-df["eval_deviation"] = evaluation_deviation
+df["eval_before_cp"]    = centipawns_before
+df["eval_after_cp"]     = centipawns_after
+df["mate_before_dist"]  = mate_distance_before
+df["mate_after_dist"]   = mate_distance_after
+df["best_stockfish"]    = predicted_best_moves
+df["eval_deviations"]   = evaluation_deviations
 
 df.to_csv(LABELLED_POSITIONS_PATH, index=False)
-print("Updated positions_labelled.csv with Stockfish evaluations and best move.")
+print("Updated positions_labelled.csv with Stockfish evaluations and best moves.")
