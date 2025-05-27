@@ -6,16 +6,16 @@ from tqdm import tqdm  # progress bar
 LABELLED_POSITIONS_PATH = "data/positions_labelled.csv"
 STOCKFISH_PATH         = "C:\\Users\\jacky\\repos\\stockfish\\stockfish-windows-x86-64-avx2.exe"
 
-df     = pd.read_csv(LABELLED_POSITIONS_PATH)
+df = pd.read_csv(LABELLED_POSITIONS_PATH)
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 
 # accumulators for every position
-centipawns_before      = []
-centipawns_after       = []
-mate_distance_before   = []
-mate_distance_after    = []
-predicted_best_moves   = []
-evaluation_deviations  = []
+centipawns_before = []
+centipawns_after = []
+mate_distance_before = []
+mate_distance_after = []
+predicted_best_moves = []
+evaluation_deviations = []
 
 # process each row (aka position)
 for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
@@ -26,11 +26,11 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
     # analysis before move (same for all three)
     try:
         analysis_before = engine.analyse(board, chess.engine.Limit(depth=20))
-        score_before    = analysis_before["score"].white()
-        cp_before       = score_before.score(mate_score=10_000)
-        mate_before     = score_before.mate()
+        score_before = analysis_before["score"].white()
+        cp_before = score_before.score(mate_score=10_000)
+        mate_before = score_before.mate()
 
-        pv             = analysis_before.get("pv", [])  # pv stands for "principal variation"
+        pv = analysis_before.get("pv", [])  # pv stands for "principal variation"
         best_move_pred = pv[0].uci() if pv else None
     except:
         centipawns_before.append(None)
@@ -46,9 +46,9 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
     mate_distance_before.append(mate_before)
     predicted_best_moves.append(best_move_pred)
 
-    after_cps   = []
+    after_cps = []
     after_mates = []
-    after_devs  = []
+    after_devs = []
 
     for mv in candidate_moves:
         b2 = board.copy()
@@ -56,9 +56,9 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
 
         try:
             analysis_after = engine.analyse(b2, chess.engine.Limit(depth=20))
-            score_after    = analysis_after["score"].white()
-            cp_after       = score_after.score(mate_score=10_000)
-            mate_after     = score_after.mate()
+            score_after = analysis_after["score"].white()
+            cp_after = score_after.score(mate_score=10_000)
+            mate_after = score_after.mate()
         except:
             after_cps.append(None)
             after_mates.append(None)
@@ -93,12 +93,12 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
 
 engine.quit()
 
-df["eval_before_cp"]   = centipawns_before
-df["eval_after_cp"]    = centipawns_after
+df["eval_before_cp"] = centipawns_before
+df["eval_after_cp"] = centipawns_after
 df["mate_before_dist"] = mate_distance_before
-df["mate_after_dist"]  = mate_distance_after
-df["best_stockfish"]   = predicted_best_moves
-df["eval_deviations"]  = evaluation_deviations
+df["mate_after_dist"] = mate_distance_after
+df["best_stockfish"] = predicted_best_moves
+df["eval_deviations"] = evaluation_deviations
 
 df.to_csv(LABELLED_POSITIONS_PATH, index=False)
 print("Updated positions_labelled.csv with Stockfish evaluations and best moves.")
