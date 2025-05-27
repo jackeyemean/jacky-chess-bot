@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 import joblib
 
 # 1) load labelled data
@@ -30,9 +31,10 @@ def fen_to_vector(fen: str) -> np.ndarray:
 
 # 3) build feature matrix
 feature_list = []
-for _, row in df.iterrows():
+for _, row in tqdm(df.iterrows(), total=len(df), desc="Building features"):
     base = fen_to_vector(row["fen"])
     extras = [
+        # phase: opening=0, middlegame=1, endgame=2
         {"opening":0,"middlegame":1,"endgame":2}[row["phase"]],
         row["material_diff"],
         row.get("time_taken", 0),
@@ -43,7 +45,7 @@ for _, row in df.iterrows():
     feature_list.append(np.hstack([base, extras]))
 X = np.vstack(feature_list)
 
-# 4) encode target moves (we train on the first of your three)
+# 4) encode target moves (train on the first of your three)
 le = LabelEncoder()
 first_moves = df["your_moves"].str.split(",").str[0]
 y = le.fit_transform(first_moves)
@@ -60,17 +62,17 @@ clf.fit(X_train, y_train)
 # 7) evaluate top-3 success rate
 y_pred = clf.predict(X_test)
 y_pred_moves = le.inverse_transform(y_pred)
-
-# pull out the three candidate moves from the hold-out set
 candidate_lists = df_test["your_moves"].str.split(",")
 
-# count how many times our prediction is in the 3 candidates
-hits = sum(
-    pred in candidates
-    for pred, candidates in zip(y_pred_moves, candidate_lists)
-)
+hits = 0
+for pred, candidates in tqdm(zip(y_pred_moves, candidate_lists),
+                             total=len(y_pred_moves),
+                             desc="Scoring top-3"):
+    if pred in candidates:
+        hits += 1
+
 top3_success = hits / len(y_pred_moves)
-print(f"▶ Top-3 success rate: {top3_success*100:.2f}%")
+print(f"▶ Test top-3 success rate: {top3_success*100:.2f}%")
 
 # 8) save model + encoder
 joblib.dump(clf,    "models/move_predictor_rf.joblib")
