@@ -25,7 +25,7 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
 
     # analysis before move (same for all three)
     try:
-        analysis_before = engine.analyse(board, chess.engine.Limit(time=0.1))
+        analysis_before = engine.analyse(board, chess.engine.Limit(depth=20))
         score_before    = analysis_before["score"].white()
         cp_before       = score_before.score(mate_score=10_000)
         mate_before     = score_before.mate()
@@ -55,7 +55,7 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
         b2.push(chess.Move.from_uci(mv))
 
         try:
-            analysis_after = engine.analyse(b2, chess.engine.Limit(time=0.1))
+            analysis_after = engine.analyse(b2, chess.engine.Limit(depth=20))
             score_after    = analysis_after["score"].white()
             cp_after       = score_after.score(mate_score=10_000)
             mate_after     = score_after.mate()
