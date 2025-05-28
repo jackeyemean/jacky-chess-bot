@@ -1,79 +1,109 @@
 import chess
 import pandas as pd
 import numpy as np
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 import joblib
 
-# 1) load labelled data
-df = pd.read_csv("data/positions_labelled.csv")
-
-# 2) helper: map piece to plane index
+#--- 1) Helpers ----------------------------------------------------
 PIECE_TO_IDX = {
     'P':0,'N':1,'B':2,'R':3,'Q':4,'K':5,
     'p':6,'n':7,'b':8,'r':9,'q':10,'k':11
 }
 
 def fen_to_vector(fen: str) -> np.ndarray:
-    """
-    Turn a FEN into a 768-dim binary vector:
-      12 piece-types × 64 squares
-    """
+    """768-dim binary: 12 piece-types × 64 squares."""
     board = chess.Board(fen)
-    vec = np.zeros(12*64, dtype=np.uint8)
+    v = np.zeros(12*64, dtype=np.uint8)
     for sq, piece in board.piece_map().items():
-        code = piece.symbol()
-        idx = PIECE_TO_IDX[code]
-        vec[idx*64 + sq] = 1
-    return vec
+        idx = PIECE_TO_IDX[piece.symbol()]
+        v[idx*64 + sq] = 1
+    return v
 
-# 3) build feature matrix
-feature_list = []
-for _, row in tqdm(df.iterrows(), total=len(df), desc="Building features"):
-    base = fen_to_vector(row["fen"])
+def parse_first_float(cell) -> float:
+    """Take first comma-separated part and float-convert (0.0 on failure)."""
+    if pd.isna(cell): return 0.0
+    s = str(cell).split(',')[0].strip()
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+phase_map = {'opening':0, 'middlegame':1, 'endgame':2}
+
+def extract_features(row) -> np.ndarray:
+    """Turn one DataFrame row into a numeric feature vector."""
+    base = fen_to_vector(row['fen'])
     extras = [
-        # phase: opening=0, middlegame=1, endgame=2
-        {"opening":0,"middlegame":1,"endgame":2}[row["phase"]],
-        row["material_diff"],
-        row.get("time_taken", 0),
-        row.get("eval_before_cp", 0),
-        row.get("eval_after_cp", 0),
-        row.get("best_move_deviation", 0),
+        phase_map.get(row['phase'], 1),
+        row.get('material_diff', 0),
+        row.get('time_taken', 0),
+        parse_first_float(row.get('eval_before_cp', 0)),
+        parse_first_float(row.get('eval_after_cp', 0)),
+        parse_first_float(row.get('eval_deviations', 0)),
     ]
-    feature_list.append(np.hstack([base, extras]))
-X = np.vstack(feature_list)
+    return np.hstack([base, extras])
 
-# 4) encode target moves (train on the first of your three)
-le = LabelEncoder()
-first_moves = df["your_moves"].str.split(",").str[0]
-y = le.fit_transform(first_moves)
 
-# 5) split into train/test
-X_train, X_test, y_train, y_test, df_train, df_test = train_test_split(
-    X, y, df, test_size=0.2, random_state=42
-)
+if __name__ == "__main__":
+    #--- 2) Load & preprocess --------------------------------------
+    df = pd.read_csv("data/positions_labelled.csv")
+    df['candidates'] = (
+        df['your_moves']
+          .str.split(',')
+          .apply(lambda lst: [m.strip() for m in lst])
+    )
+    train_df, test_df = train_test_split(df, test_size=0.20, random_state=42)
 
-# 6) fit a Random Forest
-clf = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
-clf.fit(X_train, y_train)
+    #--- 3) Expand training set (3 labels per position) -----------
+    X_train, y_train = [], []
+    for _, row in tqdm(train_df.iterrows(), total=len(train_df), desc="Building train set"):
+        feats = extract_features(row)
+        for mv in row['candidates']:
+            X_train.append(feats)
+            y_train.append(mv)
+    X_train = np.vstack(X_train)
 
-# 7) evaluate top-3 success rate
-y_pred = clf.predict(X_test)
-y_pred_moves = le.inverse_transform(y_pred)
-candidate_lists = df_test["your_moves"].str.split(",")
+    # encode string moves → integers
+    le = LabelEncoder()
+    y_train_enc = le.fit_transform(y_train)
 
-hits = 0
-for pred, candidates in tqdm(zip(y_pred_moves, candidate_lists),
-                             total=len(y_pred_moves),
-                             desc="Scoring top-3"):
-    if pred in candidates:
-        hits += 1
+    #--- 4) Fit a Random Forest ------------------------------------
+    clf = RandomForestClassifier(
+        n_estimators=100,
+        n_jobs=-1,
+        random_state=42
+    )
+    clf.fit(X_train, y_train_enc)
 
-top3_success = hits / len(y_pred_moves)
-print(f"▶ Test top-3 success rate: {top3_success*100:.2f}%")
+    #--- 5) Prepare test features & evaluate ----------------------
+    X_test = []
+    for _, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Building test set"):
+        X_test.append(extract_features(row))
+    X_test = np.vstack(X_test)
 
-# 8) save model + encoder
-joblib.dump(clf,    "models/move_predictor_rf.joblib")
-joblib.dump(le,     "models/label_encoder.joblib")
+    y_pred_enc   = clf.predict(X_test)
+    y_pred_moves = le.inverse_transform(y_pred_enc)
+
+    # --- detailed per‐position feedback ---
+    for i, (fen, candidates, pred) in enumerate(zip(
+        test_df['fen'], test_df['candidates'], y_pred_moves
+    )):
+        status = "CORRECT" if pred in candidates else "WRONG"
+        print(f"[{status}] idx={i}")
+        print(f"  FEN       : {fen}")
+        print(f"  Predicted : {pred}")
+        print(f"  Candidates: {candidates}\n")
+
+    # count overall success
+    cands_test = test_df['candidates'].tolist()
+    successes = sum(pred in c for pred, c in zip(y_pred_moves, cands_test))
+    accuracy = successes / len(test_df)
+    print(f"▶ Test accuracy (predicted ∈ candidates): {accuracy*100:.2f}%")
+
+    #--- 6) Save model & encoder ----------------------------------
+    joblib.dump(clf,    "models/move_predictor_rf.joblib", compress=3)
+    joblib.dump(le,     "models/label_encoder.joblib", compress=3)
