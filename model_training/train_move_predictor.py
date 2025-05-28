@@ -15,7 +15,6 @@ PIECE_TO_IDX = {
 }
 
 def fen_to_vector(fen: str) -> np.ndarray:
-    """768-dim binary: 12 piece-types × 64 squares."""
     board = chess.Board(fen)
     v = np.zeros(12*64, dtype=np.uint8)
     for sq, piece in board.piece_map().items():
@@ -24,18 +23,14 @@ def fen_to_vector(fen: str) -> np.ndarray:
     return v
 
 def parse_first_float(cell) -> float:
-    """Take first comma-separated part and float-convert (0.0 on failure)."""
     if pd.isna(cell): return 0.0
     s = str(cell).split(',')[0].strip()
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
+    try: return float(s)
+    except ValueError: return 0.0
 
 phase_map = {'opening':0, 'middlegame':1, 'endgame':2}
 
 def extract_features(row) -> np.ndarray:
-    """Turn one DataFrame row into a numeric feature vector."""
     base = fen_to_vector(row['fen'])
     extras = [
         phase_map.get(row['phase'], 1),
@@ -72,25 +67,37 @@ if __name__ == "__main__":
     y_train_enc = le.fit_transform(y_train)
 
     #--- 4) Fit a Random Forest ------------------------------------
-    clf = RandomForestClassifier(
-        n_estimators=100,
-        n_jobs=-1,
-        random_state=42
-    )
+    clf = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=42)
     clf.fit(X_train, y_train_enc)
 
-    #--- 5) Prepare test features & evaluate ----------------------
+    #--- 5) Prepare test features & “legal‐move” predict/proba -----
     X_test = []
     for _, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Building test set"):
         X_test.append(extract_features(row))
     X_test = np.vstack(X_test)
 
-    y_pred_enc   = clf.predict(X_test)
-    y_pred_moves = le.inverse_transform(y_pred_enc)
+    # get full probability distribution for each sample
+    probs = clf.predict_proba(X_test)
+    legal_preds = []
+
+    for i, fen in enumerate(test_df['fen']):
+        board = chess.Board(fen)
+
+        # get legal UCI moves, not SAN
+        legal_uci = [mv.uci() for mv in board.legal_moves]
+        legal_idxs = [np.where(le.classes_ == uci)[0][0]
+                    for uci in legal_uci if uci in le.classes_]
+
+        if legal_idxs:
+            best_idx = legal_idxs[np.argmax(probs[i, legal_idxs])]
+        else:
+            best_idx = np.argmax(probs[i])   # rare fallback
+
+        legal_preds.append(le.classes_[best_idx])
 
     # --- detailed per‐position feedback ---
     for i, (fen, candidates, pred) in enumerate(zip(
-        test_df['fen'], test_df['candidates'], y_pred_moves
+        test_df['fen'], test_df['candidates'], legal_preds
     )):
         status = "CORRECT" if pred in candidates else "WRONG"
         print(f"[{status}] idx={i}")
@@ -98,12 +105,11 @@ if __name__ == "__main__":
         print(f"  Predicted : {pred}")
         print(f"  Candidates: {candidates}\n")
 
-    # count overall success
-    cands_test = test_df['candidates'].tolist()
-    successes = sum(pred in c for pred, c in zip(y_pred_moves, cands_test))
+    # overall accuracy
+    successes = sum(pred in c for pred, c in zip(legal_preds, test_df['candidates']))
     accuracy = successes / len(test_df)
     print(f"▶ Test accuracy (predicted ∈ candidates): {accuracy*100:.2f}%")
 
     #--- 6) Save model & encoder ----------------------------------
-    joblib.dump(clf,    "models/move_predictor_rf.joblib", compress=3)
-    joblib.dump(le,     "models/label_encoder.joblib", compress=3)
+    joblib.dump(clf, "models/move_predictor_rf.joblib", compress=3)
+    joblib.dump(le,  "models/label_encoder.joblib", compress=3)
