@@ -9,16 +9,35 @@ STOCKFISH_PATH         = "C:\\Users\\jacky\\repos\\stockfish\\stockfish-windows-
 df = pd.read_csv(LABELLED_POSITIONS_PATH)
 engine = chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH)
 
-# accumulators for every position
-centipawns_before = []
-centipawns_after = []
-mate_distance_before = []
-mate_distance_after = []
-predicted_best_moves = []
-evaluation_deviations = []
+# Check if analysis columns already exist
+analysis_columns = ["eval_before_cp", "eval_after_cp", "mate_before_dist", "mate_after_dist", "best_stockfish", "eval_deviations"]
+columns_exist = all(col in df.columns for col in analysis_columns)
+
+# Initialize or load existing analysis data
+if columns_exist:
+    centipawns_before = df["eval_before_cp"].tolist()
+    centipawns_after = df["eval_after_cp"].tolist()
+    mate_distance_before = df["mate_before_dist"].tolist()
+    mate_distance_after = df["mate_after_dist"].tolist()
+    predicted_best_moves = df["best_stockfish"].tolist()
+    evaluation_deviations = df["eval_deviations"].tolist()
+    print("Found existing analysis data. Will skip already analyzed positions.")
+else:
+    # Initialize empty lists for new analysis
+    centipawns_before = []
+    centipawns_after = []
+    mate_distance_before = []
+    mate_distance_after = []
+    predicted_best_moves = []
+    evaluation_deviations = []
+    print("No existing analysis found. Starting fresh analysis.")
 
 # process each row (aka position)
-for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
+for idx, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
+    # Skip if already analyzed (check if eval_before_cp is not None/NaN)
+    if columns_exist and pd.notna(centipawns_before[idx]) and centipawns_before[idx] is not None:
+        continue
+    
     board = chess.Board(row["fen"])
     # now contains three comma-delimited moves
     candidate_moves = row["your_moves"].split(",")
@@ -33,18 +52,31 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
         pv = analysis_before.get("pv", [])  # pv stands for "principal variation"
         best_move_pred = pv[0].uci() if pv else None
     except:
-        centipawns_before.append(None)
-        centipawns_after.append(",".join([ "" for _ in candidate_moves ]))
-        mate_distance_before.append(None)
-        mate_distance_after.append(",".join([ "" for _ in candidate_moves ]))
-        predicted_best_moves.append(best_move_pred if 'best_move_pred' in locals() else None)
-        evaluation_deviations.append(",".join([ "" for _ in candidate_moves ]))
+        if not columns_exist:
+            centipawns_before.append(None)
+            centipawns_after.append(",".join([ "" for _ in candidate_moves ]))
+            mate_distance_before.append(None)
+            mate_distance_after.append(",".join([ "" for _ in candidate_moves ]))
+            predicted_best_moves.append(None)
+            evaluation_deviations.append(",".join([ "" for _ in candidate_moves ]))
+        else:
+            centipawns_before[idx] = None
+            centipawns_after[idx] = ",".join([ "" for _ in candidate_moves ])
+            mate_distance_before[idx] = None
+            mate_distance_after[idx] = ",".join([ "" for _ in candidate_moves ])
+            predicted_best_moves[idx] = None
+            evaluation_deviations[idx] = ",".join([ "" for _ in candidate_moves ])
         continue
 
     # save single-before values
-    centipawns_before.append(cp_before)
-    mate_distance_before.append(mate_before)
-    predicted_best_moves.append(best_move_pred)
+    if not columns_exist:
+        centipawns_before.append(cp_before)
+        mate_distance_before.append(mate_before)
+        predicted_best_moves.append(best_move_pred)
+    else:
+        centipawns_before[idx] = cp_before
+        mate_distance_before[idx] = mate_before
+        predicted_best_moves[idx] = best_move_pred
 
     after_cps = []
     after_mates = []
@@ -87,12 +119,22 @@ for _, row in tqdm(df.iterrows(), total=len(df), desc="Stockfish eval"):
         after_devs.append(deviation)
 
     # comma-delimit everything
-    centipawns_after.append(",".join(str(x) for x in after_cps))
-    mate_distance_after.append(",".join(str(x) for x in after_mates))
-    evaluation_deviations.append(",".join(str(x) for x in after_devs))
+    after_cp_str = ",".join(str(x) for x in after_cps)
+    after_mate_str = ",".join(str(x) for x in after_mates)
+    after_dev_str = ",".join(str(x) for x in after_devs)
+    
+    if not columns_exist:
+        centipawns_after.append(after_cp_str)
+        mate_distance_after.append(after_mate_str)
+        evaluation_deviations.append(after_dev_str)
+    else:
+        centipawns_after[idx] = after_cp_str
+        mate_distance_after[idx] = after_mate_str
+        evaluation_deviations[idx] = after_dev_str
 
 engine.quit()
 
+# Update the dataframe with analysis results
 df["eval_before_cp"] = centipawns_before
 df["eval_after_cp"] = centipawns_after
 df["mate_before_dist"] = mate_distance_before
